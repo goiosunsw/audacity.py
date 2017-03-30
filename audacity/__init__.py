@@ -13,7 +13,7 @@ class Aup:
         xml = open(aupfile)
         self.tree = ET.parse(xml)
         self.root = self.tree.getroot()
-        self.rate = int(self.root.attrib["rate"])
+        self.rate = float(self.root.attrib["rate"])
         ns = {"ns":"http://audacity.sourceforge.net/xml/"}
         self.project = self.root.attrib["projname"]
         self.files = []
@@ -71,6 +71,13 @@ class Aup:
             self.aunr += 1
             self.offset = 0
 
+    def get_channel_data(self, channel):
+        chunks=[]
+        with self.open(channel) as fd:
+            for data in fd.read():
+                chunks.append(numpy.frombuffer(data, numpy.float32))
+        return numpy.concatenate(chunks)
+        
     def __enter__(self):
         return self
 
