@@ -19,15 +19,22 @@ class Aup:
         self.files = []
         for channel, wavetrack in enumerate(self.root.findall("ns:wavetrack", ns)):
             aufiles = []
-            for b in wavetrack.iter("{%s}simpleblockfile" % ns["ns"]):
-                filename = b.attrib["filename"]
-                d1 = filename[0:3]
-                d2 = "d" + filename[3:5]
-                file = os.path.join(dir, self.project, d1, d2, filename)
-                if not os.path.exists(file):
-                    raise IOError("File missing in %s: %s" % (self.project, file))
-                else:
-                    aufiles.append((file, int(b.attrib["len"])))
+            for waveseq in wavetrack.findall("ns:waveclip", ns):
+                offset_sec = float(waveseq.attrib["offset"])
+                file_offset = int(offset_sec * self.rate)
+                for b in waveseq.iter("{%s}simpleblockfile"%ns["ns"]):
+                    filename = b.attrib["filename"]
+                    d1 = filename[0:3]
+                    d2 = "d" + filename[3:5]
+                    file = os.path.join(dir, self.project, d1, d2, filename)
+                    file_len = int(b.attrib["len"])
+                    if not os.path.exists(file):
+                        raise IOError("File missing in %s: %s" % (self.project, file))
+                    else:
+                        aufiles.append((file, 
+                                        file_offset, 
+                                        int(file_len)))
+                    file_offset += file_len
             self.files.append(aufiles)
         self.nchannels = len(self.files)
         self.aunr = -1
@@ -65,7 +72,7 @@ class Aup:
             raise IOError("File not opened")
         while self.aunr < len(self.files[self.channel]):
             with open(self.files[self.channel][self.aunr][0]) as fd:
-                fd.seek((self.offset - self.files[self.channel][self.aunr][1]) * 4, 2)
+                fd.seek((self.offset - self.files[self.channel][self.aunr][2]) * 4, 2)
                 data = fd.read()
                 yield data
             self.aunr += 1
@@ -75,6 +82,7 @@ class Aup:
         chunks=[]
         with self.open(channel) as fd:
             for data in fd.read():
+                print('offset: %d' % self.offset)
                 chunks.append(numpy.frombuffer(data, numpy.float32))
         return numpy.concatenate(chunks)
         
