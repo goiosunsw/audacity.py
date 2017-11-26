@@ -37,6 +37,12 @@ with aup.open(channel) as fd:
 
 In the Python API, the first channel is `0`.  
 
+### read channel to numpy array:
+```python
+channel=0
+x = aup.get_channel_data(channel)
+```
+
 ### convert to `.wav`
 
 ```python
