@@ -103,7 +103,9 @@ class Aup:
         with self.open(channel) as fd:
             self.seek(int(self.rate * start))
             for data in fd.read():
-                shorts = numpy.short(numpy.clip(numpy.frombuffer(data, numpy.float32) * scale, -scale, scale-1))
+                shorts = numpy.short(numpy.clip(numpy.frombuffer(data,
+                                                                 numpy.float32)
+                                                * scale, -scale, scale-1))
                 if stop and len(shorts) > length:
                     shorts = shorts[range(length)]
                 format = "<" + str(len(shorts)) + "h"
@@ -114,3 +116,16 @@ class Aup:
                         break
             wav.writeframes("") ## sets length in wavfile
         wav.close()
+
+    def get_annotation_data(self):
+        regions = []
+        ii = 0
+        for it in self.tree.iter():
+            attr = it.attrib
+            if 't' in attr.keys():
+                tst = float(attr['t'])
+                tend = float(attr['t1'])
+                label = attr['title']
+                regions.append(dict(start=tst, end=tend, label=label))
+                ii += 1
+        return regions

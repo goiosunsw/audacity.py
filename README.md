@@ -6,7 +6,7 @@ This package can read an Audacity `.aup` file, and can extract the audio for a g
 ## Install
 
 ```sh
-pip install --user git+https://github.com/davidavdav/audacity.py.git
+pip install --user git+https://github.com/goiosunsw/audacity.py.git
 ```
 
 ## Command line usage
@@ -41,6 +41,11 @@ In the Python API, the first channel is `0`.
 ```python
 channel=0
 x = aup.get_channel_data(channel)
+```
+
+### read region labels:
+```python
+labels = aup.get_annotation_data()
 ```
 
 ### convert to `.wav`
