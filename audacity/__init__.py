@@ -5,6 +5,7 @@
 
 import xml.etree.ElementTree as ET
 import wave, os, numpy, struct
+import pdb
 
 class Aup:
     def __init__(self, aupfile):
@@ -71,8 +72,9 @@ class Aup:
         if self.aunr < 0:
             raise IOError("File not opened")
         while self.aunr < len(self.files[self.channel]):
-            with open(self.files[self.channel][self.aunr][0]) as fd:
-                fd.seek((self.offset - self.files[self.channel][self.aunr][2]) * 4, 2)
+            #pdb.set_trace()
+            with open(self.files[self.channel][self.aunr][0], 'rb') as fd:
+                fd.seek((self.offset - self.files[self.channel][self.aunr][1]) * 4, 2)
                 data = fd.read()
                 yield data
             self.aunr += 1
@@ -82,7 +84,6 @@ class Aup:
         chunks=[]
         with self.open(channel) as fd:
             for data in fd.read():
-                print('offset: %d' % self.offset)
                 chunks.append(numpy.frombuffer(data, numpy.float32))
         return numpy.concatenate(chunks)
         
