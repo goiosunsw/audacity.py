@@ -7,6 +7,10 @@ import xml.etree.ElementTree as ET
 import wave, os, numpy, struct
 import pdb
 
+
+ns = {"ns":"http://audacity.sourceforge.net/xml/"}
+
+
 class Aup:
     def __init__(self, aupfile):
         fqpath = os.path.join(os.path.curdir, aupfile)
@@ -15,30 +19,36 @@ class Aup:
         self.tree = ET.parse(xml)
         self.root = self.tree.getroot()
         self.rate = float(self.root.attrib["rate"])
-        ns = {"ns":"http://audacity.sourceforge.net/xml/"}
         self.project = self.root.attrib["projname"]
         self.files = []
-        for channel, wavetrack in enumerate(self.root.findall("ns:wavetrack", ns)):
+        for channel, wavetrack in enumerate(self.root.findall("ns:wavetrack",
+                                                              ns)):
+            aufiles = self._get_files(wavetrack, dir=dir)
+            self.files.append(aufiles)
+        self.nchannels = len(self.files)
+        self.aunr = -1
+
+    def _get_files(self, wavetrack, dir='.'):
+        for waveclip in wavetrack.findall("ns:waveclip", ns):
+            offset_sec = float(waveclip.attrib["offset"])
+            file_offset = int(offset_sec * self.rate)
             aufiles = []
-            for waveseq in wavetrack.findall("ns:waveclip", ns):
-                offset_sec = float(waveseq.attrib["offset"])
-                file_offset = int(offset_sec * self.rate)
-                for b in waveseq.iter("{%s}simpleblockfile"%ns["ns"]):
+            for waveseq in waveclip.findall("ns:waveseq", ns):
+                for b in waveseq.iter("{%s}simpleblockfile" % ns["ns"]):
                     filename = b.attrib["filename"]
                     d1 = filename[0:3]
                     d2 = "d" + filename[3:5]
                     file = os.path.join(dir, self.project, d1, d2, filename)
                     file_len = int(b.attrib["len"])
                     if not os.path.exists(file):
-                        raise IOError("File missing in %s: %s" % (self.project, file))
+                        raise IOError("File missing in %s: %s" % (self.project,
+                                                                  file))
                     else:
-                        aufiles.append((file, 
-                                        file_offset, 
+                        aufiles.append((file,
+                                        file_offset,
                                         int(file_len)))
                     file_offset += file_len
-            self.files.append(aufiles)
-        self.nchannels = len(self.files)
-        self.aunr = -1
+        return aufiles
 
     def open(self, channel):
         if not (0 <= channel < self.nchannels):
@@ -59,7 +69,7 @@ class Aup:
         i = 0
         length = 0
         for i, f in enumerate(self.files[self.channel]):
-            s += f[1]
+            s = f[1]
             if s > pos:
                 length = f[1]
                 break
