@@ -6,7 +6,7 @@ This package can read an Audacity `.aup` file, and can extract the audio for a g
 ## Install
 
 ```sh
-pip install --user git+https://github.com/davidavdav/audacity.py.git
+pip install --user git+https://github.com/goiosunsw/audacity.py.git
 ```
 
 ## Command line usage
