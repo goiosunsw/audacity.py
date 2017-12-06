@@ -1,0 +1,6 @@
+# Ignore python compiled files
+**/*.pyc
+# Ignore vim swap files
+**/*.swp
+# Ignore build dir
+build
