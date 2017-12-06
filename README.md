@@ -43,6 +43,11 @@ channel=0
 x = aup.get_channel_data(channel)
 ```
 
+### read region labels:
+```python
+labels = aup.get_annotation_data()
+```
+
 ### convert to `.wav`
 
 ```python
