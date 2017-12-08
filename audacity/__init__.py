@@ -29,25 +29,31 @@ class Aup:
         self.aunr = -1
 
     def _get_files(self, wavetrack, dir='.'):
+        clip_idx = 0
+        aufiles = []
         for waveclip in wavetrack.findall("ns:waveclip", ns):
             offset_sec = float(waveclip.attrib["offset"])
-            file_offset = int(offset_sec * self.rate)
-            aufiles = []
-            for waveseq in waveclip.findall("ns:waveseq", ns):
-                for b in waveseq.iter("{%s}simpleblockfile" % ns["ns"]):
-                    filename = b.attrib["filename"]
-                    d1 = filename[0:3]
-                    d2 = "d" + filename[3:5]
-                    file = os.path.join(dir, self.project, d1, d2, filename)
-                    file_len = int(b.attrib["len"])
-                    if not os.path.exists(file):
-                        raise IOError("File missing in %s: %s" % (self.project,
-                                                                  file))
-                    else:
-                        aufiles.append((file,
-                                        file_offset,
-                                        int(file_len)))
-                    file_offset += file_len
+            clip_offset = int(offset_sec * self.rate)
+            for waveseq in waveclip.findall("ns:sequence", ns):
+                for waveblock in waveseq.findall("ns:waveblock", ns):
+                    file_offset = clip_offset + int(waveblock.attrib["start"])
+                    for b in waveblock.iter("{%s}simpleblockfile" % ns["ns"]):
+                        filename = b.attrib["filename"]
+                        d1 = filename[0:3]
+                        d2 = "d" + filename[3:5]
+                        file = os.path.join(dir, self.project, d1, d2, filename)
+                        file_len = int(b.attrib["len"])
+                        file_end = file_offset + file_len
+                        if not os.path.exists(file):
+                            raise IOError("File missing in %s: %s" % (self.project,
+                                                                      file))
+                        else:
+                            aufiles.append((file,
+                                            file_offset,
+                                            file_end,
+                                            clip_idx))
+                        #file_offset += file_len
+            clip_idx += 1
         return aufiles
 
     def open(self, channel):
@@ -55,7 +61,7 @@ class Aup:
             raise ValueError("Channel number out of bounds")
         self.channel = channel
         self.aunr = 0
-        self.offset = 0
+        self.offset = -self.files[channel][0][1]
         return self
 
     def close(self):
@@ -70,24 +76,33 @@ class Aup:
         length = 0
         for i, f in enumerate(self.files[self.channel]):
             s = f[1]
-            if s > pos:
-                length = f[1]
+            if f[2] > pos:
+                length = f[2] - f[1]
                 break
         if pos >= s:
             raise EOFError("Seek past end of file")
         self.aunr = i
-        self.offset = pos - s + length
+        self.offset = pos - s
 
     def read(self):
         if self.aunr < 0:
             raise IOError("File not opened")
         while self.aunr < len(self.files[self.channel]):
             #pdb.set_trace()
-            with open(self.files[self.channel][self.aunr][0], 'rb') as fd:
-                fd.seek((self.offset - self.files[self.channel][self.aunr][1]) * 4, 2)
-                data = fd.read()
-                yield data
-            self.aunr += 1
+            if self.offset < 0:
+                # silent block (before next file)
+                silence_len = -self.offset
+                zeros = [0.]*silence_len
+                yield struct.pack('%sf'%len(zeros), *zeros)
+            else:
+                this_file = self.files[self.channel][self.aunr]
+                with open(this_file[0], 'rb') as fd:
+                    #fd.seek(self.offset * 4)
+                    file_len = this_file[2] - this_file[1]
+                    fd.seek((self.offset-file_len)*4, 2)
+                    data = fd.read()
+                    yield data
+                self.aunr += 1
             self.offset = 0
 
     def get_channel_data(self, channel):
