@@ -169,3 +169,17 @@ class Aup:
                 regions.append(dict(start=tst, end=tend, label=label))
                 ii += 1
         return regions
+
+    def get_clip_boundaries(self, channel):
+        channelfiles = self.files[channel]
+        end_of_list = False
+        ii = 0
+        while not end_of_list:
+            file_list = [xx for xx in channelfiles if xx[3]==ii]
+            if not file_list:
+                end_of_list = True
+            else:
+                yield (ii, min([yy[1] for yy in file_list]), max([yy[2] for yy in
+                                                          file_list]))
+
+            ii += 1
