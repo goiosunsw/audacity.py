@@ -27,6 +27,7 @@ class Aup:
             self.files.append(aufiles)
         self.nchannels = len(self.files)
         self.aunr = -1
+        self.last_pos=0
 
     def _get_files(self, wavetrack, dir='.'):
         clip_idx = 0
@@ -52,9 +53,10 @@ class Aup:
                                             file_offset,
                                             file_end,
                                             clip_idx))
-                        #file_offset += file_len
+                        file_offset += file_len
+
             clip_idx += 1
-        return aufiles
+        return sorted(aufiles, key=lambda x:x[1])
 
     def open(self, channel):
         if not (0 <= channel < self.nchannels):
@@ -62,6 +64,7 @@ class Aup:
         self.channel = channel
         self.aunr = 0
         self.offset = -self.files[channel][0][1]
+        self.last_pos = 0
         return self
 
     def close(self):
@@ -78,29 +81,37 @@ class Aup:
             s = f[1]
             if f[2] > pos:
                 length = f[2] - f[1]
+                if f[1] > pos:
+                    self.silence = True
+                    self.aunr = i-1
+                    self.offset = -1
+                else:
+                    self.silence = False
+                    self.aunr = i
+                    self.offset = pos - s
                 break
         if pos >= s:
             raise EOFError("Seek past end of file")
-        self.aunr = i
-        self.offset = pos - s
 
     def read(self):
         if self.aunr < 0:
             raise IOError("File not opened")
         while self.aunr < len(self.files[self.channel]):
             #pdb.set_trace()
-            if self.offset < 0:
+            this_file = self.files[self.channel][self.aunr]
+            if self.last_pos < this_file[1]-1:
                 # silent block (before next file)
-                silence_len = -self.offset
+                silence_len = this_file[1] - self.last_pos
                 zeros = [0.]*silence_len
+                self.last_pos += silence_len
                 yield struct.pack('%sf'%len(zeros), *zeros)
             else:
-                this_file = self.files[self.channel][self.aunr]
                 with open(this_file[0], 'rb') as fd:
                     #fd.seek(self.offset * 4)
                     file_len = this_file[2] - this_file[1]
                     fd.seek((self.offset-file_len)*4, 2)
                     data = fd.read()
+                    self.last_pos += file_len
                     yield data
                 self.aunr += 1
             self.offset = 0
