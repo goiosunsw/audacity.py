@@ -5,7 +5,7 @@
 
 import xml.etree.ElementTree as ET
 import wave, os, numpy, struct
-import pdb
+
 
 
 ns = {"ns":"http://audacity.sourceforge.net/xml/"}
@@ -19,6 +19,7 @@ class Aup:
         self.tree = ET.parse(xml)
         self.root = self.tree.getroot()
         self.rate = float(self.root.attrib["rate"])
+        ns = {"ns":"http://audacity.sourceforge.net/xml/"}
         self.project = self.root.attrib["projname"]
         self.files = []
         for channel, wavetrack in enumerate(self.root.findall("ns:wavetrack",
@@ -92,6 +93,8 @@ class Aup:
                 break
         if pos >= s:
             raise EOFError("Seek past end of file")
+        self.aunr = i
+        self.offset = pos - s + length
 
     def read(self):
         if self.aunr < 0:
