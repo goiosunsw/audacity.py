@@ -29,6 +29,7 @@ class Aup:
         self.nchannels = len(self.files)
         self.aunr = -1
         self.last_pos=0
+        self.ns=ns
 
     def _get_files(self, wavetrack, dir='.'):
         clip_idx = 0
@@ -160,14 +161,15 @@ class Aup:
     def get_annotation_data(self):
         regions = []
         ii = 0
-        for it in self.tree.iter():
-            attr = it.attrib
-            if 't' in attr.keys():
-                tst = float(attr['t'])
-                tend = float(attr['t1'])
-                label = attr['title']
-                regions.append(dict(start=tst, end=tend, label=label))
-                ii += 1
+        for child in self.tree.findall('.//ns:labeltrack',self.ns):
+            for it in child.iter():
+                attr = it.attrib
+                if 't' in attr.keys():
+                    tst = float(attr['t'])
+                    tend = float(attr['t1'])
+                    label = attr['title']
+                    regions.append(dict(start=tst, end=tend, label=label))
+                    ii += 1
         return regions
 
     def get_clip_boundaries(self, channel):
