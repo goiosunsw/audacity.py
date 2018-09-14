@@ -28,7 +28,7 @@ class Aup:
             aufiles = self._get_files(wavetrack, dir=dir)
             self.files.append(aufiles)
             info = wavetrack.attrib
-            channel_info.append(info)
+            self.channel_info.append(info)
         self.nchannels = len(self.files)
         self.aunr = -1
         self.last_pos=0
@@ -189,5 +189,5 @@ class Aup:
 
             ii += 1
 
-    def get_channel_info(self):
-        return self.channel_info
+    def get_channel_names(self):
+        return [xx['name'] for xx in self.channel_info]
