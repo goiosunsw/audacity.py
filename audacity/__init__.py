@@ -22,10 +22,13 @@ class Aup:
         ns = {"ns":"http://audacity.sourceforge.net/xml/"}
         self.project = self.root.attrib["projname"]
         self.files = []
+        self.channel_info = []
         for channel, wavetrack in enumerate(self.root.findall("ns:wavetrack",
                                                               ns)):
             aufiles = self._get_files(wavetrack, dir=dir)
             self.files.append(aufiles)
+            info = wavetrack.attrib
+            channel_info.append(info)
         self.nchannels = len(self.files)
         self.aunr = -1
         self.last_pos=0
@@ -185,3 +188,6 @@ class Aup:
                                                           file_list]))
 
             ii += 1
+
+    def get_channel_info(self):
+        return self.channel_info
