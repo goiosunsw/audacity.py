@@ -7,7 +7,6 @@ import xml.etree.ElementTree as ET
 import wave, os, numpy, struct
 
 
-
 ns = {"ns":"http://audacity.sourceforge.net/xml/"}
 
 
@@ -106,7 +105,6 @@ class Aup:
         if self.aunr < 0:
             raise IOError("File not opened")
         while self.aunr < len(self.files[self.channel]):
-            #pdb.set_trace()
             this_file = self.files[self.channel][self.aunr]
             if not this_file[0]:
                 # silent block (before next file)
@@ -136,15 +134,20 @@ class Aup:
                 self.seek(sample_start)
             for data in fd.read():
                 vec = numpy.frombuffer(data, numpy.float32)
-                print(self.aunr, len(vec))
                 if t_end is not None:
                     if self.pos > sample_end:
                         vec = vec[:-(self.pos-sample_end)]
-                        print(self.pos-sample_end, len(vec))
                         chunks.append(vec)
                         break
                 chunks.append(vec)
         return numpy.concatenate(chunks)
+
+    def get_data(self, t_start=0.0, t_end=None):
+        data = []
+        for chno in range(self.nchannels):
+            data.append(self.get_channel_data(chno, t_start=t_start,
+                t_end=t_end))
+        return numpy.array(data).T
 
     def __enter__(self):
         return self
