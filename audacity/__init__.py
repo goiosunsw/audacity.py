@@ -31,7 +31,7 @@ class Aup:
             self.channel_info.append(info)
         self.nchannels = len(self.files)
         self.aunr = -1
-        self.last_pos=0
+        self.pos = -1
         self.ns=ns
 
     def _get_files(self, wavetrack, dir='.'):
@@ -40,6 +40,13 @@ class Aup:
         for waveclip in wavetrack.findall("ns:waveclip", ns):
             offset_sec = float(waveclip.attrib["offset"])
             clip_offset = int(offset_sec * self.rate)
+            try:
+                last_end = aufiles[-1][2]
+            except IndexError:
+                last_end = 0
+            if clip_offset > last_end:
+                aufiles.append(('', last_end , clip_offset, clip_idx))
+                clip_idx += 1
             for waveseq in waveclip.findall("ns:sequence", ns):
                 for waveblock in waveseq.findall("ns:waveblock", ns):
                     file_offset = clip_offset + int(waveblock.attrib["start"])
@@ -69,11 +76,12 @@ class Aup:
         self.channel = channel
         self.aunr = 0
         self.offset = -self.files[channel][0][1]
-        self.last_pos = 0
+        self.pos = 0
         return self
 
     def close(self):
         self.aunr = -1
+        self.pos = -1
 
     ## a linear search (not great)
     def seek(self, pos):
@@ -86,19 +94,13 @@ class Aup:
             s = f[1]
             if f[2] > pos:
                 length = f[2] - f[1]
-                if f[1] > pos:
-                    self.silence = True
-                    self.aunr = i-1
-                    self.offset = -1
-                else:
-                    self.silence = False
-                    self.aunr = i
-                    self.offset = pos - s
+                self.offset = pos - s
+                self.pos=pos
                 break
-        if pos >= s:
+        if pos >= f[2]:
             raise EOFError("Seek past end of file")
         self.aunr = i
-        self.offset = pos - s + length
+        self.pos = pos
 
     def read(self):
         if self.aunr < 0:
@@ -106,30 +108,44 @@ class Aup:
         while self.aunr < len(self.files[self.channel]):
             #pdb.set_trace()
             this_file = self.files[self.channel][self.aunr]
-            if self.last_pos < this_file[1]-1:
+            if not this_file[0]:
                 # silent block (before next file)
-                silence_len = this_file[1] - self.last_pos
+                silence_len = this_file[2] - self.pos
                 zeros = [0.]*silence_len
-                self.last_pos += silence_len
+                self.pos += silence_len
                 yield struct.pack('%sf'%len(zeros), *zeros)
             else:
                 with open(this_file[0], 'rb') as fd:
-                    #fd.seek(self.offset * 4)
                     file_len = this_file[2] - this_file[1]
-                    fd.seek((self.offset-file_len)*4, 2)
+                    read_len = (file_len - self.offset)
+                    fd.seek(-read_len*4, 2)
                     data = fd.read()
-                    self.last_pos += file_len
+                    self.pos += read_len
                     yield data
-                self.aunr += 1
+            self.aunr += 1
             self.offset = 0
 
-    def get_channel_data(self, channel):
+    def get_channel_data(self, channel, 
+                         t_start=0, t_end=None):
         chunks=[]
+        sample_start = int(t_start*self.rate)
+        if t_end is not None:
+            sample_end = int(t_end*self.rate)
         with self.open(channel) as fd:
+            if sample_start > 0:
+                self.seek(sample_start)
             for data in fd.read():
-                chunks.append(numpy.frombuffer(data, numpy.float32))
+                vec = numpy.frombuffer(data, numpy.float32)
+                print(self.aunr, len(vec))
+                if t_end is not None:
+                    if self.pos > sample_end:
+                        vec = vec[:-(self.pos-sample_end)]
+                        print(self.pos-sample_end, len(vec))
+                        chunks.append(vec)
+                        break
+                chunks.append(vec)
         return numpy.concatenate(chunks)
-        
+
     def __enter__(self):
         return self
 
