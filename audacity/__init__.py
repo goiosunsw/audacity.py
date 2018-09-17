@@ -219,4 +219,4 @@ class Aup:
         return [xx['name'] for xx in self.channel_info]
     
     def get_channel_nsamples(self):
-        return [xx[-1][2]+1 for xx in self.files]
+        return [xx[-1][2] for xx in self.files]
