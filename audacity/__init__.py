@@ -14,31 +14,31 @@ class Aup:
     def __init__(self, aupfile):
         fqpath = os.path.join(os.path.curdir, aupfile)
         dir = os.path.dirname(fqpath)
-        xml = open(aupfile)
-        self.tree = ET.parse(xml)
-        self.root = self.tree.getroot()
-        self.rate = float(self.root.attrib["rate"])
-        ns = {"ns":"http://audacity.sourceforge.net/xml/"}
-        self.project = self.root.attrib["projname"]
-        self.files = []
-        self.channel_info = []
-        for channel, wavetrack in enumerate(self.root.findall("ns:wavetrack",
-                                                              ns)):
-            aufiles = self._get_files(wavetrack, dir=dir)
-            self.files.append(aufiles)
-            info = wavetrack.attrib
-            self.channel_info.append(info)
-        self.nchannels = len(self.files)
-        self.aunr = -1
-        self.pos = -1
-        self.ns=ns
+        with open(aupfile) as xml:
+            self.tree = ET.parse(xml)
+            self.root = self.tree.getroot()
+            self.rate = float(self.root.attrib["rate"])
+            ns = {"ns":"http://audacity.sourceforge.net/xml/"}
+            self.project = self.root.attrib["projname"]
+            self.files = []
+            self.channel_info = []
+            for channel, wavetrack in enumerate(self.root.findall("ns:wavetrack",
+                                                                  ns)):
+                aufiles = self._get_files(wavetrack, dir=dir)
+                self.files.append(aufiles)
+                info = wavetrack.attrib
+                self.channel_info.append(info)
+            self.nchannels = len(self.files)
+            self.aunr = -1
+            self.pos = -1
+            self.ns=ns
 
     def _get_files(self, wavetrack, dir='.'):
         clip_idx = 0
         aufiles = []
         for waveclip in wavetrack.findall("ns:waveclip", ns):
             offset_sec = float(waveclip.attrib["offset"])
-            clip_offset = int(offset_sec * self.rate)
+            clip_offset = int(round(offset_sec * self.rate))
             try:
                 last_end = aufiles[-1][2]
             except IndexError:
@@ -219,4 +219,4 @@ class Aup:
         return [xx['name'] for xx in self.channel_info]
     
     def get_channel_nsamples(self):
-        return [xx[-1][2] for xx in self.files]
+        return [xx[-1][2]+1 for xx in self.files]
