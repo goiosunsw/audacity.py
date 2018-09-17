@@ -143,10 +143,17 @@ class Aup:
         return numpy.concatenate(chunks)
 
     def get_data(self, t_start=0.0, t_end=None):
+        # insure that all channels have the same lengths
+        max_len = max(self.get_channel_nsamples())
         data = []
         for chno in range(self.nchannels):
-            data.append(self.get_channel_data(chno, t_start=t_start,
-                t_end=t_end))
+            thischan = self.get_channel_data(chno, t_start=t_start,
+                t_end=t_end)
+            thislen = len(thischan)
+            if thislen < max_len:
+                thischan = numpy.concatenate((thischan,
+                    numpy.zeros(max_len-thislen)))
+            data.append(thischan)
         return numpy.array(data).T
 
     def __enter__(self):
@@ -210,3 +217,6 @@ class Aup:
 
     def get_channel_names(self):
         return [xx['name'] for xx in self.channel_info]
+    
+    def get_channel_nsamples(self):
+        return [xx[-1][2] for xx in self.files]
