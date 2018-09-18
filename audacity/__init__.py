@@ -38,7 +38,7 @@ class Aup:
         aufiles = []
         allclips = wavetrack.findall("ns:waveclip", ns)
         # sort clips according to offset
-        allclips = sorted(allclips, key=lambda x:x.attrib['offset'])
+        allclips = sorted(allclips, key=lambda x:float(x.attrib['offset']))
         for waveclip in allclips:
             offset_sec = float(waveclip.attrib["offset"])
             clip_offset = int(round(offset_sec * self.rate))
