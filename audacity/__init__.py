@@ -36,7 +36,10 @@ class Aup:
     def _get_files(self, wavetrack, dir='.'):
         clip_idx = 0
         aufiles = []
-        for waveclip in wavetrack.findall("ns:waveclip", ns):
+        allclips = wavetrack.findall("ns:waveclip", ns)
+        # sort clips according to offset
+        allclips = sorted(allclips, key=lambda x:x.attrib['offset'])
+        for waveclip in allclips:
             offset_sec = float(waveclip.attrib["offset"])
             clip_offset = int(round(offset_sec * self.rate))
             try:
