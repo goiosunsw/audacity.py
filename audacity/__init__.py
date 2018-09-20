@@ -147,7 +147,9 @@ class Aup:
 
     def get_data(self, t_start=0.0, t_end=None):
         # insure that all channels have the same lengths
-        max_len = max(self.get_channel_nsamples())
+        max_len = 0
+        if t_start == 0.0 and t_end is None:
+            max_len = max(self.get_channel_nsamples())
         data = []
         for chno in range(self.nchannels):
             thischan = self.get_channel_data(chno, t_start=t_start,
