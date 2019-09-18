@@ -1,12 +1,12 @@
-{% set version = "0.2.0" %}
+{% set version = "0.1.1" %}
+{% set name = "audacity" %}
 
 package:
-  name: "pypevoc"
+  name: {{ name|lower }}
   version: {{ version }}
 
 source:
   path: ../
-  # git-url: https://github.com/goiosunsw/pypevoc.git
 
 build:
   number: 0
@@ -22,11 +22,11 @@ requirements:
     - python
 
 about:
-  home: "https://github.com/goiosunsw/pypevoc.git"
+  home: "https://github.com/goiosunsw/audacity.git"
   license: "GNU Lesser General Public v3 or later (LGPLv3+)"
   license_family: "LGPL"
   license_file: ""
-  summary: "Pure python phase vocoder"
+  summary: "Audacity file interface for python/numpy"
   doc_url: ""
   dev_url: ""
 
